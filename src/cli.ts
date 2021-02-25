@@ -6,7 +6,12 @@ import { createInterface } from "readline";
 import { bold, dim, blue, red, inverse } from "chalk";
 
 import { parse, message as oscMessage } from "./osc";
-import { OSCArgumentValueList, OSCBundle, OSCMessage } from "./types";
+import {
+  OSCArgumentValueList,
+  OSCArgumentTagList,
+  OSCBundle,
+  OSCMessage,
+} from "./types";
 
 let [action = "", ...args] = process.argv.slice(2);
 
@@ -39,7 +44,7 @@ function talk(args: string[]) {
 
   socket.on("connect", () => {
     let { address, port } = socket.remoteAddress();
-    console.log(inverse(`  Sending OSC to ${address}:${port}  `));
+    console.log(inverse(center(`Sending OSC to ${address}:${port}`)));
 
     input.prompt();
   });
@@ -95,7 +100,7 @@ function listen(args: string[]) {
     const info = socket.address();
 
     console.log(
-      inverse(`  Listening for OSC on ${info.address}:${info.port}  `)
+      inverse(center(`Listening for OSC on ${info.address}:${info.port}`))
     );
   });
 
@@ -178,7 +183,7 @@ function printPacket(packet: OSCBundle | OSCMessage, indent = 0) {
   } else {
     let { address, args, argTypes } = packet;
     console.log(
-      "  ".repeat(indent) + `${bold(address)} ${serializeArgs(args)}`
+      "  ".repeat(indent) + `${bold(address)} ${serializeArgs(args, argTypes)}`
     );
   }
 }
@@ -194,11 +199,15 @@ function parseAddress(args: string): [string | undefined, number] {
   return [address || undefined, parseInt(portString)];
 }
 
-function serializeArgs(args: OSCArgumentValueList) {
+function serializeArgs(args: OSCArgumentValueList, types: OSCArgumentTagList) {
   return args
-    .map((arg) => {
+    .map((arg, i) => {
       if (typeof arg === "number") {
-        return arg.toString();
+        if (types[i] === "f") {
+          return arg.toFixed(3);
+        } else {
+          return arg.toString();
+        }
       } else if (typeof arg === "string") {
         return `"${arg}"`;
       } else if (arg instanceof Uint8Array) {
@@ -229,4 +238,16 @@ function printTime(time: Date) {
     "." +
     time.getMilliseconds().toString().padStart(3, "0")
   );
+}
+
+function center(text: String) {
+  // Default padding
+  let pad: number = 2;
+
+  if (process.stdout.isTTY) {
+    let [width] = process.stdout.getWindowSize();
+    pad = Math.max(pad, (width - text.length) / 2);
+  }
+
+  return " ".repeat(Math.ceil(pad)) + text + " ".repeat(Math.floor(pad));
 }
