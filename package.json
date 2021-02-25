@@ -1,0 +1,19 @@
+{
+  "name": "oscope",
+  "version": "0.0.1",
+  "description": "Tool for sending and receiving OSC messages",
+  "bin": "./dist/cli.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "author": "Matthew Kaney",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^14.14.30",
+    "typescript": "^4.1.5"
+  },
+  "dependencies": {
+    "chalk": "^4.1.0"
+  }
+}
