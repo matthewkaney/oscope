@@ -36,9 +36,9 @@ switch (action.toLowerCase()) {
 function help() {}
 
 function talk(args: string[]) {
-  let [address, port] = parseAddress(args[0]);
+  let [address, port, addressType] = parseAddress(args[0]);
 
-  let socket = createSocket("udp4");
+  let socket = createSocket(addressType);
 
   socket.connect(port, address);
 
@@ -92,9 +92,9 @@ function talk(args: string[]) {
 }
 
 function listen(args: string[]) {
-  let [address, port] = parseAddress(args[0]);
+  let [address, port, addressType] = parseAddress(args[0]);
 
-  let socket = createSocket("udp4");
+  let socket = createSocket(addressType);
 
   socket.on("listening", () => {
     const info = socket.address();
@@ -189,14 +189,21 @@ function printPacket(packet: OSCBundle | OSCMessage, indent = 0) {
 }
 
 // Utils
-function parseAddress(args: string): [string | undefined, number] {
-  let match = args.match(/^(?:(\d+\.\d+\.\d+\.\d+):)?(\d+)$/);
+function parseAddress(input: string): [string | undefined, number, 'udp4' | 'udp6'] {
+  let match: RegExpMatchArray | null;
+  let address: string, portString: string;
+  let addressType: 'udp4' | 'udp6';
+  if (match = input.match(/^(?:([0-9a-z\.]*):)?(\d+)$/)) {
+    [, address, portString] = match;
+    addressType = 'udp4';
+  } else if (match = input.match(/^(?:\[([0-9a-f:]*)\]:)?(\d+)$/)) {
+    [, address, portString] = match;
+    addressType = 'udp6';
+  } else {
+    throw Error(`Unrecognized address: "${input}"`);
+  }
 
-  if (!match) throw Error("Please specify a port");
-
-  let [, address, portString] = match;
-
-  return [address || undefined, parseInt(portString)];
+  return [address || undefined, parseInt(portString), addressType];
 }
 
 function serializeArgs(args: OSCArgumentValueList, types: OSCArgumentTagList) {
