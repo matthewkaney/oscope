@@ -5,13 +5,15 @@ import { createInterface } from "readline";
 
 import { bold, dim, blue, red, inverse } from "chalk";
 
-import { parse, message as oscMessage } from "./osc";
+import { parseAddress, printAddress } from './address';
+
+import { parse, message as oscMessage } from "../osc/osc";
 import {
   OSCArgumentValueList,
   OSCArgumentTagList,
   OSCBundle,
   OSCMessage,
-} from "./types";
+} from "../osc/types";
 
 let [action = "", ...args] = process.argv.slice(2);
 
@@ -36,15 +38,15 @@ switch (action.toLowerCase()) {
 function help() {}
 
 function talk(args: string[]) {
-  let [address, port, addressType] = parseAddress(args[0]);
+  let { address, port, family } = parseAddress(args[0]);
 
-  let socket = createSocket(addressType);
+  let socket = createSocket(family === 'IPv4' ? 'udp4' : 'udp6');
 
-  socket.connect(port, address);
+  socket.connect(port, address || undefined);
 
   socket.on("connect", () => {
-    let { address, port } = socket.remoteAddress();
-    console.log(inverse(center(`Sending OSC to ${address}:${port}`)));
+    let info = socket.remoteAddress();
+    console.log(inverse(center(`Sending OSC to ${printAddress(info)}`)));
 
     input.prompt();
   });
@@ -92,9 +94,9 @@ function talk(args: string[]) {
 }
 
 function listen(args: string[]) {
-  let [address, port, addressType] = parseAddress(args[0]);
+  let {address, port, family} = parseAddress(args[0]);
 
-  let socket = createSocket(addressType);
+  let socket = createSocket(family === 'IPv4'?'udp4':'udp6');
 
   socket.on("listening", () => {
     const info = socket.address();
@@ -112,8 +114,8 @@ function listen(args: string[]) {
 }
 
 function snoop(args: string[]) {
-  let [address1, port1] = parseAddress(args[0]);
-  let [address2, port2] = parseAddress(args[1]);
+  let { address: address1, port: port1 } = parseAddress(args[0]);
+  let { address: address2, port: port2 } = parseAddress(args[1]);
 
   console.log(address2, port2);
 
@@ -186,24 +188,6 @@ function printPacket(packet: OSCBundle | OSCMessage, indent = 0) {
       "  ".repeat(indent) + `${bold(address)} ${serializeArgs(args, argTypes)}`
     );
   }
-}
-
-// Utils
-function parseAddress(input: string): [string | undefined, number, 'udp4' | 'udp6'] {
-  let match: RegExpMatchArray | null;
-  let address: string, portString: string;
-  let addressType: 'udp4' | 'udp6';
-  if (match = input.match(/^(?:([0-9a-z\.]*):)?(\d+)$/)) {
-    [, address, portString] = match;
-    addressType = 'udp4';
-  } else if (match = input.match(/^(?:\[([0-9a-f:]*)\]:)?(\d+)$/)) {
-    [, address, portString] = match;
-    addressType = 'udp6';
-  } else {
-    throw Error(`Unrecognized address: "${input}"`);
-  }
-
-  return [address || undefined, parseInt(portString), addressType];
 }
 
 function serializeArgs(args: OSCArgumentValueList, types: OSCArgumentTagList) {

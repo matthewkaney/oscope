@@ -2,7 +2,7 @@
   "name": "oscope",
   "version": "0.0.1",
   "description": "Tool for sending and receiving OSC messages",
-  "bin": "./dist/cli.js",
+  "bin": "./dist/cli/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w"
