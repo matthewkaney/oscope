@@ -18,8 +18,6 @@ import {
 let [action = "", ...args] = process.argv.slice(2);
 
 switch (action.toLowerCase()) {
-  case "help":
-    break;
   case "talk":
     talk(args);
     break;
@@ -30,7 +28,20 @@ switch (action.toLowerCase()) {
     snoop(args);
     break;
   default:
-    //error
+    // Check for a different action
+    if (action != "") {
+      console.log(`I don't understand the command "${action}"\n`);
+    }
+
+    console.log("Supported commands:\n");
+
+    console.log(bold("oscope listen <address>"));
+    console.log("  Open a UDP port on <address> and print received messages.\n");
+
+    console.log(bold("oscope talk <address>"));
+    console.log("  Open a text prompt for sending messages to another piece of software listening on <address>.\n");
+
+    // TODO: Print software version
     break;
 }
 
