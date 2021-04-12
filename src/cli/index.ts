@@ -5,7 +5,7 @@ import { createInterface } from "readline";
 
 import { bold, dim, blue, red, inverse } from "chalk";
 
-import { parseAddress, printAddress } from './address';
+import { parseAddress, printAddress } from "./address";
 
 import { parse, message as oscMessage } from "../osc/osc";
 import {
@@ -36,10 +36,14 @@ switch (action.toLowerCase()) {
     console.log("Supported commands:\n");
 
     console.log(bold("oscope listen <address>"));
-    console.log("  Open a UDP port on <address> and print received messages.\n");
+    console.log(
+      "  Open a UDP port on <address> and print received messages.\n"
+    );
 
     console.log(bold("oscope talk <address>"));
-    console.log("  Open a text prompt for sending messages to another piece of software listening on <address>.\n");
+    console.log(
+      "  Open a text prompt for sending messages to another piece of software listening on <address>.\n"
+    );
 
     // TODO: Print software version
     break;
@@ -51,7 +55,7 @@ function help() {}
 function talk(args: string[]) {
   let { address, port, family } = parseAddress(args[0]);
 
-  let socket = createSocket(family === 'IPv4' ? 'udp4' : 'udp6');
+  let socket = createSocket(family === "IPv4" ? "udp4" : "udp6");
 
   socket.connect(port, address || undefined);
 
@@ -105,9 +109,9 @@ function talk(args: string[]) {
 }
 
 function listen(args: string[]) {
-  let {address, port, family} = parseAddress(args[0]);
+  let { address, port, family } = parseAddress(args[0]);
 
-  let socket = createSocket(family === 'IPv4'?'udp4':'udp6');
+  let socket = createSocket(family === "IPv4" ? "udp4" : "udp6");
 
   socket.on("listening", () => {
     const info = socket.address();
