@@ -6,6 +6,7 @@ import { createInterface } from "readline";
 import { bold, dim, blue, red, inverse } from "chalk";
 
 import { parseAddress, printAddress } from "./address";
+import { errAddressInUse } from "./errors";
 
 import { parse, message as oscMessage } from "../osc/osc";
 import {
@@ -123,6 +124,19 @@ function listen(args: string[]) {
 
   socket.on("message", (message, { address, port }) => {
     printDatagram(message, address, port);
+  });
+
+  socket.on("error", (err) => {
+    if (errAddressInUse(err)) {
+      console.log(
+        red(
+          `Error: Another program is already listening to the UPD socket ${err.address}:${err.port}`
+        )
+      );
+    } else {
+      // Unknown error
+      console.log(err);
+    }
   });
 
   socket.bind(port, address);
