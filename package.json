@@ -8,7 +8,9 @@
     "dev": "tsc -w",
     "prepublishOnly": "rm -rf dist && npm run build"
   },
-  "files": ["dist/"],
+  "files": [
+    "dist/"
+  ],
   "author": "Matthew Kaney",
   "license": "0BSD",
   "repository": "github:mindofmatthew/oscope",
