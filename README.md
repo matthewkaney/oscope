@@ -1,4 +1,4 @@
-# oScope, the OSC Scope
+# oScope, the OSC scope
 
 This is a command line utility for sending and receiving [Open Sound Control](https://en.wikipedia.org/wiki/Open_Sound_Control) messages. This can be useful for debugging and testing.
 
