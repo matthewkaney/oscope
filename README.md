@@ -42,7 +42,7 @@ This opens a connection at the given local address and prints the contents of an
 ### `talk`
 
 ```bash
-oscope listen <address>
+oscope talk <address>
 ```
 
 This opens a connection to a piece of software at a given remote address. You can use the command line to send messages to that program and then view any messages sent in response on the console.
