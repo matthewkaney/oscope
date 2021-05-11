@@ -25,8 +25,8 @@ switch (action.toLowerCase()) {
   case "listen":
     listen(args);
     break;
-  case "snoop":
-    snoop(args);
+  case "help":
+    help();
     break;
   default:
     // Check for a different action
@@ -36,22 +36,26 @@ switch (action.toLowerCase()) {
 
     console.log("Supported commands:\n");
 
-    console.log(bold("oscope listen <address>"));
-    console.log(
-      "  Open a UDP port on <address> and print received messages.\n"
-    );
+    help(); // Print help info
 
-    console.log(bold("oscope talk <address>"));
-    console.log(
-      "  Open a text prompt for sending messages to another piece of software listening on <address>.\n"
-    );
-
-    // TODO: Print software version
     break;
 }
 
 // Sub-programs
-function help() {}
+function help() {
+  console.log(bold("oscope listen <address>"));
+  console.log("  Open a UDP port on <address> and print received messages.\n");
+
+  console.log(bold("oscope talk <address>"));
+  console.log(
+    "  Open a text prompt for sending messages to another piece of software listening on <address>.\n"
+  );
+
+  console.log(bold("oscope help"));
+  console.log("  Print this help information.\n");
+
+  console.log(`(oscope version ${process.env.npm_package_version})`);
+}
 
 function talk(args: string[]) {
   let { address, port, family } = parseAddress(args[0]);
