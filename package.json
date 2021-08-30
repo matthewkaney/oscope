@@ -4,6 +4,7 @@
   "description": "Simple command line tool for testing and interacting with OSC (Open Sound Control) messages",
   "bin": "./dist/cli/index.js",
   "scripts": {
+    "start": "node ./dist/cli/index.js",
     "build": "tsc",
     "dev": "tsc -w",
     "prepublishOnly": "rm -rf dist && npm run build"

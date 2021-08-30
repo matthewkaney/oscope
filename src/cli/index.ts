@@ -98,9 +98,13 @@ function talk(args: string[]) {
         ) {
           [, arg, oscArgs = ""] = match;
           oscArgValues.push({ f: parseFloat(arg) });
-        } else if ((match = oscArgs.match(/^"([^"]*)"(?:$|\s+(.*)$)/))) {
+        } else if (
+          (match = oscArgs.match(
+            /^("(?:\\["bfnrt\/\\]|\\u[a-fA-F0-9]{4}|[^"\\])*")(?:$|\s+(.*)$)/
+          ))
+        ) {
           [, arg, oscArgs = ""] = match;
-          oscArgValues.push({ s: arg });
+          oscArgValues.push({ s: JSON.parse(arg) });
         } else {
           throw Error(`Didn't recognize character "${oscArgs[0]}"`);
         }
