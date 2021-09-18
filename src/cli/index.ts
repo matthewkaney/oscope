@@ -6,7 +6,11 @@ import { createInterface } from "readline";
 import { bold, dim, blue, red, inverse } from "chalk";
 
 import { parseAddress, printAddress } from "./address";
-import { errAddressInUse } from "./errors";
+import {
+  errAddressInUse,
+  errAddressNotAvailable,
+  errConnectionRefused,
+} from "./errors";
 import { lexer } from "./lexer";
 
 import { parse, message as oscMessage } from "../osc/osc";
@@ -76,6 +80,14 @@ function talk(args: string[]) {
     printDatagram(message, address, port);
   });
 
+  socket.on("error", (err) => {
+    if (errConnectionRefused(err)) {
+      console.log(
+        red(`Error: Could not connect to the remote port ${address}:${port}`)
+      );
+    }
+  });
+
   let input = createInterface({ input: process.stdin, output: process.stdout });
 
   input.on("line", (line) => {
@@ -123,6 +135,12 @@ function listen(args: string[]) {
       console.log(
         red(
           `Error: Another program is already listening to the UPD socket ${err.address}:${err.port}`
+        )
+      );
+    } else if (errAddressNotAvailable(err)) {
+      console.log(
+        red(
+          `Error: The address ${err.address}:${err.port} is not available on this machine`
         )
       );
     } else {
