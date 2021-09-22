@@ -5,7 +5,7 @@
   "bin": "./dist/cli/index.js",
   "scripts": {
     "start": "node ./dist/cli/index.js",
-    "build": "tsc",
+    "build": "parcel build",
     "dev": "tsc -w",
     "prepublishOnly": "rm -rf dist && npm run build"
   },
@@ -18,11 +18,18 @@
   "bugs": {
     "url": "https://github.com/mindofmatthew/oscope/issues"
   },
+  "targets": {
+    "bin": {
+      "source": "src/cli/index.ts",
+      "context": "node",
+      "includeNodeModules": true,
+      "sourceMap": false
+    }
+  },
   "devDependencies": {
     "@types/node": "^14.14.30",
-    "typescript": "^4.1.5"
-  },
-  "dependencies": {
+    "parcel": "^2.0.0-rc.0",
+    "typescript": "^4.1.5",
     "chalk": "^4.1.0"
   }
 }
