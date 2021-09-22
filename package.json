@@ -1,6 +1,6 @@
 {
   "name": "oscope",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Simple command line tool for testing and interacting with OSC (Open Sound Control) messages",
   "bin": "./dist/cli/index.js",
   "scripts": {
