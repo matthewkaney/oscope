@@ -3,6 +3,8 @@
   "version": "0.2.0",
   "description": "Simple command line tool for testing and interacting with OSC (Open Sound Control) messages",
   "bin": "./dist/cli/index.js",
+  "main": "./dist/lib/index.js",
+  "types": "./dist/lib/index.d.ts",
   "scripts": {
     "start": "node ./dist/cli/index.js",
     "build": "parcel build",
@@ -24,9 +26,17 @@
       "context": "node",
       "includeNodeModules": true,
       "sourceMap": false
+    },
+    "main": {
+      "source": "src/osc/osc.ts",
+      "context": "node"
+    },
+    "types": {
+      "source": "src/osc/osc.ts"
     }
   },
   "devDependencies": {
+    "@parcel/transformer-typescript-types": "^2.0.0-rc.0",
     "@types/node": "^14.14.30",
     "chalk": "^4.1.0",
     "moo": "^0.5.1",
