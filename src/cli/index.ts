@@ -6,7 +6,12 @@ import { createInterface } from "readline";
 import { bold, dim, blue, red, inverse } from "chalk";
 
 import { parseAddress, printAddress } from "./address";
-import { errAddressInUse } from "./errors";
+import {
+  errAddressInUse,
+  errAddressNotAvailable,
+  errConnectionRefused,
+} from "./errors";
+import { lexer } from "./lexer";
 
 import { parse, message as oscMessage } from "../osc/osc";
 import {
@@ -75,42 +80,33 @@ function talk(args: string[]) {
     printDatagram(message, address, port);
   });
 
+  socket.on("error", (err) => {
+    if (errConnectionRefused(err)) {
+      console.log(
+        red(`Error: Could not connect to the remote port ${address}:${port}`)
+      );
+    }
+  });
+
   let input = createInterface({ input: process.stdin, output: process.stdout });
 
   input.on("line", (line) => {
     try {
-      // Parse message
-      let [oscAddress, oscArgs = ""] = line.trim().split(/\s+(.*)/);
+      let [oscAddress, ...oscArgs] = lexer.reset(line);
 
-      let oscArgValues = [];
-
-      while (oscArgs.length > 0) {
-        let arg: string;
-        let match: RegExpMatchArray | null;
-
-        if ((match = oscArgs.match(/^([+-]?\d+)(?:$|\s+(.*)$)/))) {
-          [, arg, oscArgs = ""] = match;
-          oscArgValues.push({ i: parseInt(arg) });
-        } else if (
-          (match = oscArgs.match(
-            /^([+-]?(?:\d+\.\d*|\.\d+|\d+f))(?:$|\s+(.*)$)/
-          ))
-        ) {
-          [, arg, oscArgs = ""] = match;
-          oscArgValues.push({ f: parseFloat(arg) });
-        } else if (
-          (match = oscArgs.match(
-            /^("(?:\\["bfnrt\/\\]|\\u[a-fA-F0-9]{4}|[^"\\])*")(?:$|\s+(.*)$)/
-          ))
-        ) {
-          [, arg, oscArgs = ""] = match;
-          oscArgValues.push({ s: JSON.parse(arg) });
-        } else {
-          throw Error(`Didn't recognize character "${oscArgs[0]}"`);
-        }
+      if (
+        oscAddress.type === "address" &&
+        typeof oscAddress.value === "string"
+      ) {
+        socket.send(
+          oscMessage(
+            oscAddress.value,
+            ...oscArgs.filter((a) => a.type !== "ws").map((a) => a.value)
+          )
+        );
+      } else {
+        throw Error("Unrecognized address");
       }
-
-      socket.send(oscMessage(oscAddress, ...oscArgValues));
     } catch (e) {
       console.log(red(e.message));
     }
@@ -139,6 +135,12 @@ function listen(args: string[]) {
       console.log(
         red(
           `Error: Another program is already listening to the UPD socket ${err.address}:${err.port}`
+        )
+      );
+    } else if (errAddressNotAvailable(err)) {
+      console.log(
+        red(
+          `Error: The address ${err.address}:${err.port} is not available on this machine`
         )
       );
     } else {
