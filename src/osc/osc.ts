@@ -13,7 +13,7 @@ import {
   OSCArgumentInputValue,
   OSCArgumentValue,
   OSCArgumentValueList,
-} from "./types";
+} from "./types.js";
 
 import {
   writeInt32,
@@ -25,7 +25,7 @@ import {
   writeBlob,
   readBlob,
   readTimestamp,
-} from "./atoms";
+} from "./atoms.js";
 
 /**
  * Generate a binary OSC message with the given information

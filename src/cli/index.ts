@@ -1,25 +1,25 @@
 #!/usr/bin/env node
-
-import { createSocket, Socket } from "dgram";
+import { networkInterfaces } from "os";
+import { createSocket } from "dgram";
 import { createInterface } from "readline";
 
-import { bold, dim, blue, red, inverse } from "chalk";
+import chalk from "chalk";
 
-import { parseAddress, printAddress } from "./address";
+import { parseAddress, printAddress } from "./address.js";
 import {
   errAddressInUse,
   errAddressNotAvailable,
   errConnectionRefused,
-} from "./errors";
-import { lexer } from "./lexer";
+} from "./errors.js";
+import { lexer } from "./lexer.js";
 
-import { parse, message as oscMessage } from "../osc/osc";
+import { parse, message as oscMessage } from "../osc/osc.js";
 import {
   OSCArgumentValueList,
   OSCArgumentTagList,
   OSCBundle,
   OSCMessage,
-} from "../osc/types";
+} from "../osc/types.js";
 
 let [action = "", ...args] = process.argv.slice(2);
 
@@ -33,31 +33,51 @@ switch (action.toLowerCase()) {
   case "help":
     help();
     break;
-  default:
+  default: // Print help info
     // Check for a different action
     if (action != "") {
       console.log(`I don't understand the command "${action}"\n`);
     }
 
-    console.log("Supported commands:\n");
-
-    help(); // Print help info
+    help();
 
     break;
 }
 
 // Sub-programs
 function help() {
-  console.log(bold("oscope listen <address>"));
+  console.log(chalk.bold("Supported commands:\n"));
+
+  console.log(chalk.bold(chalk.blue("oscope listen <address>")));
   console.log("  Open a UDP port on <address> and print received messages.\n");
 
-  console.log(bold("oscope talk <address>"));
+  console.log(chalk.bold(chalk.blue("oscope talk <address>")));
   console.log(
     "  Open a text prompt for sending messages to another piece of software listening on <address>.\n"
   );
 
-  console.log(bold("oscope help"));
+  console.log(chalk.bold(chalk.blue("oscope help")));
   console.log("  Print this help information.\n");
+
+  console.log(chalk.bold("Network devices on this computer:\n"));
+
+  let nets = networkInterfaces();
+
+  for (const deviceID in nets) {
+    let interfaceList = nets[deviceID];
+    if (interfaceList) {
+      console.log(chalk.dim(`${deviceID}:`));
+      for (let { address, family, internal, netmask } of interfaceList) {
+        let addressString = family === "IPv6" ? `[${address}]` : address;
+        let familyString = chalk.dim(
+          `(${family}${internal ? ", internal" : ""})`
+        );
+        console.log(`  ${addressString} ${familyString}`);
+        console.log(`    ${netmask}`);
+      }
+      console.log("");
+    }
+  }
 
   console.log(`(oscope version ${process.env.npm_package_version})`);
 }
@@ -71,7 +91,10 @@ function talk(args: string[]) {
 
   socket.on("connect", () => {
     let info = socket.remoteAddress();
-    console.log(inverse(center(`Sending OSC to ${printAddress(info)}`)));
+
+    socket.setBroadcast(true);
+
+    console.log(chalk.inverse(center(`Sending OSC to ${printAddress(info)}`)));
 
     input.prompt();
   });
@@ -83,8 +106,12 @@ function talk(args: string[]) {
   socket.on("error", (err) => {
     if (errConnectionRefused(err)) {
       console.log(
-        red(`Error: Could not connect to the remote port ${address}:${port}`)
+        chalk.red(
+          `Error: Could not connect to the remote port ${address}:${port}`
+        )
       );
+    } else if (err instanceof Error) {
+      console.log(chalk.red(`Error: ${err.message}`));
     }
   });
 
@@ -104,11 +131,17 @@ function talk(args: string[]) {
             ...oscArgs.filter((a) => a.type !== "ws").map((a) => a.value)
           )
         );
+      } else if (oscAddress.type === "command") {
+        if (oscAddress.value === "q" || oscAddress.value === "quit") {
+          console.log("oh, i should quit");
+        }
       } else {
         throw Error("Unrecognized address");
       }
     } catch (e) {
-      console.log(red(e.message));
+      if (e instanceof Error) {
+        console.log(chalk.red(e.message));
+      }
     }
   });
 }
@@ -121,8 +154,10 @@ function listen(args: string[]) {
   socket.on("listening", () => {
     const info = socket.address();
 
+    socket.setBroadcast(true);
+
     console.log(
-      inverse(center(`Listening for OSC on ${info.address}:${info.port}`))
+      chalk.inverse(center(`Listening for OSC on ${info.address}:${info.port}`))
     );
   });
 
@@ -133,13 +168,13 @@ function listen(args: string[]) {
   socket.on("error", (err) => {
     if (errAddressInUse(err)) {
       console.log(
-        red(
+        chalk.red(
           `Error: Another program is already listening to the UPD socket ${err.address}:${err.port}`
         )
       );
     } else if (errAddressNotAvailable(err)) {
       console.log(
-        red(
+        chalk.red(
           `Error: The address ${err.address}:${err.port} is not available on this machine`
         )
       );
@@ -152,58 +187,19 @@ function listen(args: string[]) {
   socket.bind(port, address);
 }
 
-function snoop(args: string[]) {
-  let { address: address1, port: port1 } = parseAddress(args[0]);
-  let { address: address2, port: port2 } = parseAddress(args[1]);
-
-  console.log(address2, port2);
-
-  let socket1 = createSocket("udp4");
-
-  let remotes = new Map<number, Socket>();
-
-  socket1.on("listening", () => {
-    console.log(
-      inverse(`  Snooping between ${socket1.address().port} and ${port2}  `)
-    );
-  });
-
-  socket1.on("message", (message, rinfo) => {
-    let remote: Socket;
-
-    if (remotes.has(rinfo.port)) {
-      remote = remotes.get(rinfo.port) as Socket;
-      remote.send(message);
-    } else {
-      remote = createSocket("udp4");
-      remote.connect(port2, address2);
-
-      remote.on("connect", () => {
-        remote.send(message);
-        remotes.set(rinfo.port, remote);
-      });
-
-      remote.on("message", (message, rinfo2) => {
-        socket1.send(message, rinfo.port, rinfo.address);
-      });
-    }
-
-    printDatagram(message, rinfo.address, rinfo.port);
-  });
-
-  socket1.bind(port1, address1);
-}
-
 function printDatagram(packet: Uint8Array, address: string, port: number) {
   try {
     console.log(
-      "\n" + blue(`${address}:${port} (received ${printTime(new Date())})`)
+      "\n" +
+        chalk.blue(`${address}:${port} (received ${printTime(new Date())})`)
     );
 
     let result = parse(packet);
     printPacket(result);
-  } catch (error) {
-    console.log(red(error.message));
+  } catch (e) {
+    if (e instanceof Error) {
+      console.log(chalk.red(e.message));
+    }
   }
 }
 
@@ -216,7 +212,7 @@ function printPacket(packet: OSCBundle | OSCMessage, indent = 0) {
       packets,
     } = packet;
     let time = new Date((seconds - NTPOffset + fracSeconds / 2 ** 32) * 1000);
-    console.log("  ".repeat(indent) + dim(`Bundle (${printTime(time)})`));
+    console.log("  ".repeat(indent) + chalk.dim(`Bundle (${printTime(time)})`));
 
     for (let subPacket of packets) {
       printPacket(subPacket, indent + 1);
@@ -224,7 +220,8 @@ function printPacket(packet: OSCBundle | OSCMessage, indent = 0) {
   } else {
     let { address, args, argTypes } = packet;
     console.log(
-      "  ".repeat(indent) + `${bold(address)} ${serializeArgs(args, argTypes)}`
+      "  ".repeat(indent) +
+        `${chalk.bold(address)} ${serializeArgs(args, argTypes)}`
     );
   }
 }

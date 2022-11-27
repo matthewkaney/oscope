@@ -1,4 +1,5 @@
-import { compile } from "moo";
+import moo from "moo";
+const { compile } = moo;
 import { OSCArgumentInputValue } from "../osc/types";
 
 export const lexer = compile<OSCArgumentInputValue>({
@@ -10,4 +11,5 @@ export const lexer = compile<OSCArgumentInputValue>({
   },
   int: { match: /[+-]?\d+/, value: (v) => ({ i: parseInt(v) }) },
   string: /"(?:\\["bfnrt\/\\]|\\u[a-fA-F0-9]{4}|[^"\\])*"/,
+  command: { match: /:\w+/, value: (v) => v.slice(1) },
 });
